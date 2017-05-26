@@ -57,16 +57,15 @@ func (wl *whitelist) Load() (w *whitelist, err error) {
 
 func (wl *whitelist) Update() (err error) {
 	var ss []*unifi.Station
-	var smap = make(stations)
 
 	ss, err = wl.client.Stations(config.site)
 	if err == nil {
+		wl.stations = make(stations)
 		for _, s := range ss {
-			smap[s.MAC.String()] = s
+			wl.stations[s.MAC.String()] = s
 		}
-		wl.stations = smap
 		for mac := range wl.List {
-			if s, ok := smap[mac]; ok {
+			if s, ok := wl.stations[mac]; ok {
 				wl.List[mac].Info = s
 			} else {
 				wl.List[mac].Info = nil
