@@ -59,7 +59,7 @@ func (wl *whitelist) Update() (err error) {
 	var ss []*unifi.Station
 	var smap = make(stations)
 
-	ss, err = wl.client.Stations(*config.site)
+	ss, err = wl.client.Stations(config.site)
 	if err == nil {
 		for _, s := range ss {
 			smap[s.MAC.String()] = s
@@ -103,10 +103,10 @@ func (wl *whitelist) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	switch mode {
 	case "add":
 		wl.add(alias, self).save()
-		http.Redirect(w, r, *config.prefix+"/", 303)
+		http.Redirect(w, r, config.base+"/", 303)
 	case "rm":
 		wl.rm(self).save()
-		http.Redirect(w, r, *config.prefix+"/", 303)
+		http.Redirect(w, r, config.base+"/", 303)
 	default:
 		http.NotFound(w, r)
 	}
