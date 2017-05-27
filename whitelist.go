@@ -18,7 +18,7 @@ import (
 type wlitem struct {
 	Alias    string         `json:"alias"`
 	Hostname string         `json:"hostname"`
-	Online   bool           `json:"-"`
+	Online   bool           `json:"online"`
 	Info     *unifi.Station `json:"-"`
 }
 
@@ -45,6 +45,15 @@ func NewWhitelist(c *unifi.Client, jsonfile string) (wl *whitelist) {
 		client:   c,
 		jsonfile: jsonfile,
 		template: template.Must(template.New("index").Parse(string(MustAsset("index.tmpl")))),
+	}
+}
+
+func newWlitem(alias string, s *unifi.Station) (wi *wlitem) {
+	return &wlitem{
+		Alias:    alias,
+		Hostname: s.Hostname,
+		Online:   true,
+		Info:     s,
 	}
 }
 
@@ -83,11 +92,16 @@ func (wl *whitelist) Save() (err error) {
 	return
 }
 
+func (wl *whitelist) OnChange() {
+	fmt.Println("change detected")
+}
+
 func (wl *whitelist) Update() (err error) {
 	var ss []*unifi.Station
 
 	ss, err = wl.client.Stations(config.site)
 	if err == nil {
+		changed := false
 		wl.stations = make(stations)
 		for _, s := range ss {
 			wl.stations[s.MAC.String()] = s
@@ -95,7 +109,11 @@ func (wl *whitelist) Update() (err error) {
 		for mac := range wl.List {
 			s, ok := wl.stations[mac]
 			wl.List[mac].Info = s
+			changed = changed || wl.List[mac].Online != ok
 			wl.List[mac].Online = ok
+		}
+		if changed {
+			wl.OnChange()
 		}
 	}
 
@@ -123,6 +141,7 @@ func (wl *whitelist) self(r *http.Request) (station *unifi.Station) {
 			break
 		}
 	}
+
 	return
 }
 
@@ -168,17 +187,10 @@ func (wl *whitelist) AddHandler(w http.ResponseWriter, r *http.Request) {
 		data.Alias = self.Hostname
 	}
 
-	wl.List[self.MAC.String()] = &wlitem{
-		Alias:    data.Alias,
-		Hostname: self.Hostname,
-		Info:     self,
-	}
-
-	http.Redirect(w, r, config.base+"/", 303)
+	wl.List[self.MAC.String()] = newWlitem(data.Alias, self)
 }
 
 func (wl *whitelist) RemoveHandler(w http.ResponseWriter, r *http.Request) {
 	delete(wl.List, wl.self(r).MAC.String())
 	wl.Save()
-	http.Redirect(w, r, config.base+"/", 303)
 }
