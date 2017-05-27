@@ -59,8 +59,7 @@
     }
 
     article {
-      margin: 1rem 2rem;
-      border: 1px solid;
+      margin: 0.3rem;
     }
 
     .device-list {
@@ -102,8 +101,14 @@
       font-weight: 900;
     }
 
+    .ellipsis {
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
     .dark-gray,
-    th, button {
+    button {
       background-color: #4f5459
     }
 
@@ -123,6 +128,10 @@
       color: #e2e5e9
     }
 
+    .black {
+      background-color: #353535
+    }
+
     .red {
       background-color: #ff7772
     }
@@ -139,44 +148,15 @@
       color: #67ba72
     }
 
-    .blue {
-      background-color: #70bde6
+    .online {
+      background: #e9ffd9;
+      color: #4f5459;
     }
 
-    .blue-text {
-      color: #70bde6
-    }
-
-    .yellow {
-      background-color: #ffdd69
-    }
-
-    .yellow-text {
-      color: #ffdd69
-    }
-
-    .magenta {
-      background-color: #bf75ff
-    }
-
-    .magenta-text {
-      color: #bf75ff
-    }
-
-    .cyan {
-      background-color: #92f9f6
-    }
-
-    .cyan-text {
-      color: #92f9f6
-    }
-
-    .black {
-      background-color: #353535
-    }
-
-    .black-text {
-      color: #353535
+    .offline {
+      background: #ffecec;
+      color: #f5aca6;
+      opacity: .4;
     }
   </style>
 </head>
@@ -189,23 +169,24 @@
   </section>
   <section>
     <div class="device-list">{{ range .List }}
-      <article id="st-{{ .Hostname }}" class="device {{ if .Info }}green-text{{ else }}red-text{{ end }}">
-        <p>
-          {{ .Alias }}<br />
-          <small class="gray-text">{{ .Hostname }}</small>
+      <article id="st-{{ .Hostname }}" class="device{{ if .Online }} online{{ else }} offline{{ end }}">
+        <p class="ellipsis{{ if .Online }} bold{{ end }}">
+          {{ .Alias }}
+        </p>
+        <p class="gray-text ellipsis">
+          <small>{{ .Hostname }}</small>
         </p>
       </article>{{ else }}
       <p class="center">no stations found</p>{{ end }}
     </div>
-  </section>{{ if .Info }}
-
+  </section>{{ if .Self }}
   <form action="whitelist" method="get">
   <section class="row controls light-gray">
       <div class="row">
         <button type="submit" name="mode" value="rm" class="col large red">set invisible</button>
       </div>
       <div class="row">
-        <input type="text" name="alias" placeholder="{{ .Info.Hostname }}" class="col large">
+        <input type="text" name="alias" placeholder="{{ .Self.Hostname }}" class="col large">
       </div>
       <div class="row">
         <button type="submit" name="mode" value="add" class="col large green">set visible</button>
