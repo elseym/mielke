@@ -15,7 +15,7 @@ export const Path: Path = {
 export default merge({}, {
   context: Path.projectRoot,
   entry: {
-    app: "./src/index.tsx",
+    app: "./src/mielke.tsx",
   },
   module: {
     rules: [
@@ -29,7 +29,8 @@ export default merge({}, {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: "src/index.html",
+      filename: "mielke.html",
+      template: "src/mielke.html",
       inlineSource: ".(js|css)$"
     }),
   ],

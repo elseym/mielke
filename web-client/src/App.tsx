@@ -7,26 +7,103 @@ import Device from "./components/Device";
 import InputField from "./components/form/InputField";
 import Button from "./components/form/Button";
 import Section from "./components/Section";
+import Backend from "./api/Backend";
 
-const App = () => (
-  <div>
-    <Main>
-      <Box>
-        <Title>Mielke/1.0</Title>
-      </Box>
-      <DeviceList>
-        <Device online={true} alias="test" hostname="bla" />
-        <Device online={false} alias="test2" hostname="blablablasdfasdlfjkhasdjfh" />
-      </DeviceList>
-      <Box>
-        <Section flex={true}>
-          <Button color="red">set invisible</Button>
-          <InputField />
-          <Button color="green">set visible</Button>
-        </Section>
-      </Box>
-    </Main>
-  </div>
-);
+const backend = new Backend();
+
+interface AppState {
+  data?: any;
+  alias?: any
+}
+
+class App extends React.Component<any, AppState> {
+  state: AppState = {};
+
+  constructor() {
+    super();
+
+    this.state = {};
+
+    this.renderList = this.renderList.bind(this);
+    this.handleInputChange = this.handleInputChange.bind(this);
+    this.handleInvisible = this.handleInvisible.bind(this);
+    this.handleVisible = this.handleVisible.bind(this);
+    this.refresh = this.refresh.bind(this);
+  }
+
+  componentDidMount() {
+    this.refresh();
+  }
+
+  refresh() {
+    backend.getData().then((response: any) => {
+      return response.json();
+    }).then((data: any) => {
+      this.setState({
+        data,
+        alias: data.self.alias,
+      });
+    });
+  }
+
+  renderList(): JSX.Element[] | null {
+    const data = this.state.data;
+
+    if (data !== undefined) {
+      const list = data.list;
+      return list.map((client: any, index: any) =>
+        <Device online={client.online} alias={client.alias} hostname={client.hostname} />
+      );
+    }
+
+    return null;
+  }
+
+  render() {
+    const alias = this.state.data && this.state.data.self.alias;
+
+    return (
+      <div>
+        <Main>
+          <Box>
+            <Title>Mielke/1.0</Title>
+          </Box>
+          <DeviceList>
+            {this.renderList()}
+          </DeviceList>
+          <Box>
+            <Section flex={true}>
+              <Button color="red" onClick={this.handleInvisible}>set invisible</Button>
+              <InputField onChange={this.handleInputChange} placeholder={alias} />
+              <Button color="green" onClick={this.handleVisible}>set visible</Button>
+            </Section>
+          </Box>
+        </Main>
+      </div>
+    )
+  }
+
+  handleInputChange(e: any) {
+    const alias = e.target.value;
+
+    this.setState({
+      alias,
+    });
+  }
+
+  handleInvisible(e: any) {
+    e.preventDefault();
+    backend.setInvisible().then(() => {
+      this.refresh();
+    });
+  }
+
+  handleVisible(e: any) {
+    e.preventDefault();
+    backend.setVisible(this.state.alias).then(() => {
+      this.refresh();
+    });
+  }
+}
 
 export default App;

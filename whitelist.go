@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -37,12 +36,11 @@ type whitelist struct {
 	stations stations
 	client   *unifi.Client
 	jsonfile string
-	template *template.Template
 }
 
 type view struct {
-	Self wlitem
-	List wlitems
+	Self wlitem    `json:"self"`
+	List []*wlitem `json:"list"`
 }
 
 func NewWhitelist(c *unifi.Client, jsonfile string) (wl *whitelist) {
@@ -51,7 +49,6 @@ func NewWhitelist(c *unifi.Client, jsonfile string) (wl *whitelist) {
 		stations: make(stations),
 		client:   c,
 		jsonfile: jsonfile,
-		template: template.Must(template.New("index").Parse(string(MustAsset("index.tmpl")))),
 	}
 }
 
@@ -84,7 +81,13 @@ func (wl *whitelist) view(r *http.Request) view {
 	if wi, ok := wl.List[self.MAC.String()]; ok {
 		alias = wi.Alias
 	}
-	return view{*newWlitem(alias, self), wl.List}
+
+	list := make([]*wlitem, 0, len(wl.List))
+	for _, i := range wl.List {
+		list = append(list, i)
+	}
+
+	return view{*newWlitem(alias, self), list}
 }
 
 func (wl *whitelist) Load() (w *whitelist, err error) {
@@ -196,7 +199,7 @@ func (wl *whitelist) JSONListHandler(w http.ResponseWriter, r *http.Request) {
 
 func (wl *whitelist) HTMLListHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html")
-	wl.template.Execute(w, wl.view(r))
+	w.Write(MustAsset("mielke.html"))
 }
 
 func (wl *whitelist) AddHandler(w http.ResponseWriter, r *http.Request) {

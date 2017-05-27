@@ -2,7 +2,7 @@
   "name": "mielke-web-client",
   "version": "0.1.0",
   "description": "web interface for the mielke service",
-  "main": "src/index.tsx",
+  "main": "src/mielke.tsx",
   "repository": "https://github.com/elseym/mielke.git",
   "scripts": {
     "start": "webpack-dev-server --stdin --config ./config/webpack.dev.config.ts",

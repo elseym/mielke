@@ -5,10 +5,11 @@ interface ButtonProps {
   color: "green" | "red";
   children: string;
   className?: string;
+  onClick?: (e: any) => void;
 }
 
-const Button = ({color, children, className}: ButtonProps) => (
-  <button className={className}>
+const Button = ({color, children, className, onClick}: ButtonProps) => (
+  <button className={className} onClick={onClick}>
     {children}
   </button>
 );
