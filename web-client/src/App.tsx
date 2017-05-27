@@ -71,13 +71,11 @@ class App extends React.Component<any, AppState> {
           <DeviceList>
             {this.renderList()}
           </DeviceList>
-          <Box>
-            <Section flex={true}>
-              <Button color="red" onClick={this.handleInvisible}>set invisible</Button>
-              <InputField onChange={this.handleInputChange} placeholder={alias} />
-              <Button color="green" onClick={this.handleVisible}>set visible</Button>
-            </Section>
-          </Box>
+          <Section flex={true}>
+            <Button color="red" onClick={this.handleInvisible}>set invisible</Button>
+            <InputField onChange={this.handleInputChange} placeholder={alias} />
+            <Button color="green" onClick={this.handleVisible}>set visible</Button>
+          </Section>
         </Main>
       </div>
     )

@@ -5,4 +5,7 @@ export default styled.main`
   width: 48rem;
   margin: 0 auto;
   font: .8rem/1rem 'Menlo', 'Droid Sans Mono', 'Courier New', monospace;
+  @media (max-width: 48rem) {
+    width: 98%;
+  }
 `;

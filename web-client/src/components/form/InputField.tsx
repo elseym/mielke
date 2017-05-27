@@ -7,4 +7,9 @@ export default styled.input`
   border-radius: .25rem;
   outline: 0;
   border: 0;
+  flex: 1;
+  text-align: center;
+  @media (max-width: 48rem) {
+    flex: 0 0 auto;
+  }
 `;

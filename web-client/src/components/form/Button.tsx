@@ -23,4 +23,8 @@ export default styled(Button)`
   background-color: ${({color}: ButtonProps) => color === "green" ? "#67ba72;" : "#ff7772"};
   text-transform: uppercase;
   text-align: center;
+  flex: 1;
+  @media (max-width: 48rem) {
+    flex: 0 0 auto;
+  }
 `;
