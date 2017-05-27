@@ -176,7 +176,7 @@
       </article>{{ else }}
       <p class="center">no stations found</p>{{ end }}
     </div>
-  </section>{{ if .Info }}
+  </section>{{ if .Self }}
 
   <form action="whitelist" method="get">
   <section class="light-gray">
@@ -184,7 +184,7 @@
         <button type="submit" name="mode" value="rm" class="large red">set invisible</button>
       </div>
       <div class="center">
-        <input type="text" name="alias" placeholder="{{ .Info.Hostname }}" class="large">
+        <input type="text" name="alias" placeholder="{{ .Self.Alias }}" class="large">
       </div>
       <div class="center">
         <button type="submit" name="mode" value="add" class="large green">set visible</button>

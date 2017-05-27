@@ -16,10 +16,13 @@ import (
 )
 
 type wlitem struct {
-	Alias    string         `json:"alias"`
-	Hostname string         `json:"hostname"`
-	Online   bool           `json:"online"`
-	Info     *unifi.Station `json:"-"`
+	Alias      string         `json:"alias"`
+	Hostname   string         `json:"hostname"`
+	Online     bool           `json:"online"`
+	Associated time.Time      `json:"associated"`
+	LastSeen   time.Time      `json:"lastSeen"`
+	AP         string         `json:"ap"`
+	Info       *unifi.Station `json:"-"`
 }
 
 type wlitems map[string]*wlitem
@@ -34,7 +37,7 @@ type whitelist struct {
 }
 
 type view struct {
-	Info *unifi.Station
+	Self wlitem
 	List wlitems
 }
 
@@ -49,16 +52,28 @@ func NewWhitelist(c *unifi.Client, jsonfile string) (wl *whitelist) {
 }
 
 func newWlitem(alias string, s *unifi.Station) (wi *wlitem) {
-	return &wlitem{
-		Alias:    alias,
-		Hostname: s.Hostname,
-		Online:   true,
-		Info:     s,
-	}
+	return (&wlitem{
+		Alias:  alias,
+		Online: true,
+	}).syncFrom(s)
+}
+
+func (wi *wlitem) syncFrom(s *unifi.Station) *wlitem {
+	wi.AP = s.APMAC.String()
+	wi.Hostname = s.Hostname
+	wi.Associated = s.AssociationTime
+	wi.LastSeen = s.LastSeen
+	wi.Info = s
+	return wi
 }
 
 func (wl *whitelist) view(r *http.Request) view {
-	return view{wl.self(r), wl.List}
+	self := wl.self(r)
+	alias := self.Hostname
+	if wi, ok := wl.List[self.MAC.String()]; ok {
+		alias = wi.Alias
+	}
+	return view{*newWlitem(alias, self), wl.List}
 }
 
 func (wl *whitelist) Load() (w *whitelist, err error) {
@@ -108,8 +123,10 @@ func (wl *whitelist) Update() (err error) {
 		}
 		for mac := range wl.List {
 			s, ok := wl.stations[mac]
-			wl.List[mac].Info = s
 			changed = changed || wl.List[mac].Online != ok
+			if ok {
+				wl.List[mac].syncFrom(s)
+			}
 			wl.List[mac].Online = ok
 		}
 		if changed {
@@ -188,6 +205,7 @@ func (wl *whitelist) AddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wl.List[self.MAC.String()] = newWlitem(data.Alias, self)
+	wl.Save()
 }
 
 func (wl *whitelist) RemoveHandler(w http.ResponseWriter, r *http.Request) {
