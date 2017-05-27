@@ -52,7 +52,12 @@ class App extends React.Component<any, AppState> {
     if (data !== undefined) {
       const list = data.list;
       return list.map((client: any, index: any) =>
-        <Device online={client.online} alias={client.alias} hostname={client.hostname} />
+        <Device
+          avatarURL={client.avatarURL}
+          online={client.online}
+          alias={client.alias}
+          hostname={client.hostname}
+        />
       );
     }
 
