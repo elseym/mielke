@@ -171,7 +171,7 @@
   </section>
   <section>
     <div>{{ range .List }}
-      <article id="st-{{ .Hostname }}" class="{{ if .Info }}green-text{{ else }}red-text{{ end }}">
+      <article id="st-{{ .Hostname }}" class="{{ if .Online }}green-text{{ else }}red-text{{ end }}">
         <p>{{ .Alias }} <small class="gray-text">{{ .Hostname }}</small></p>
       </article>{{ else }}
       <p class="center">no stations found</p>{{ end }}

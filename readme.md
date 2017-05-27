@@ -33,6 +33,7 @@ colleagues currently present in the office.
   `- List (the whitelisted clients, key: mac address) map[string]struct
     `- Alias (the user supplied name) string
     `- Hostname (the hostname at the time of whitelisting) string
+    `- Online (whether this client is online) bool
     `- Info (the whitelisted station's info) *mdlayher/unifi.Statiom
   `- Info (the requesting stations's info) *mdlayher/unifi.Statiom
 ```

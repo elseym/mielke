@@ -18,6 +18,7 @@ import (
 type wlitem struct {
 	Alias    string         `json:"alias"`
 	Hostname string         `json:"hostname"`
+	Online   bool           `json:"-"`
 	Info     *unifi.Station `json:"-"`
 }
 
@@ -92,11 +93,9 @@ func (wl *whitelist) Update() (err error) {
 			wl.stations[s.MAC.String()] = s
 		}
 		for mac := range wl.List {
-			if s, ok := wl.stations[mac]; ok {
-				wl.List[mac].Info = s
-			} else {
-				wl.List[mac].Info = nil
-			}
+			s, ok := wl.stations[mac]
+			wl.List[mac].Info = s
+			wl.List[mac].Online = ok
 		}
 	}
 
@@ -131,8 +130,8 @@ type ssm map[string]string
 
 func (wl *whitelist) Router() http.Handler {
 	r := router{make([]route, 0)}
-	r.add("/", "GET", ssm{"Accept": "text/html"}, wl.HTMLListHandler)
 	r.add("/", "GET", ssm{"Accept": "application/json"}, wl.JSONListHandler)
+	r.add("/", "GET", ssm{"Accept": "text/html"}, wl.HTMLListHandler)
 	r.add("/", "PUT", ssm{"Content-Type": "application/json"}, wl.AddHandler)
 	r.add("/", "DELETE", ssm{}, wl.RemoveHandler)
 
@@ -154,15 +153,23 @@ func (wl *whitelist) HTMLListHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wl *whitelist) AddHandler(w http.ResponseWriter, r *http.Request) {
-	self := wl.self(r)
+	var data struct {
+		Alias string `json:"alias"`
+	}
 
-	alias := r.URL.Query().Get("alias")
-	if alias == "" {
-		alias = self.Hostname
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		w.WriteHeader(400)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	self := wl.self(r)
+	if data.Alias == "" {
+		data.Alias = self.Hostname
 	}
 
 	wl.List[self.MAC.String()] = &wlitem{
-		Alias:    alias,
+		Alias:    data.Alias,
 		Hostname: self.Hostname,
 		Info:     self,
 	}
