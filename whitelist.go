@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 
+	"time"
+
 	"github.com/mdlayher/unifi"
 )
 
@@ -27,6 +29,12 @@ type whitelist struct {
 	stations stations
 	client   *unifi.Client
 	jsonfile string
+	template *template.Template
+}
+
+type view struct {
+	Info *unifi.Station
+	List wlitems
 }
 
 func NewWhitelist(c *unifi.Client, jsonfile string) (wl *whitelist) {
@@ -35,7 +43,12 @@ func NewWhitelist(c *unifi.Client, jsonfile string) (wl *whitelist) {
 		stations: make(stations),
 		client:   c,
 		jsonfile: jsonfile,
+		template: template.Must(template.New("index").Parse(string(MustAsset("index.tmpl")))),
 	}
+}
+
+func (wl *whitelist) view(r *http.Request) view {
+	return view{wl.self(r), wl.List}
 }
 
 func (wl *whitelist) Load() (w *whitelist, err error) {
@@ -44,7 +57,7 @@ func (wl *whitelist) Load() (w *whitelist, err error) {
 
 	if data, err = ioutil.ReadFile(wl.jsonfile); err != nil {
 		if _, er2 := os.Stat(wl.jsonfile); os.IsNotExist(er2) {
-			err = wl.save()
+			err = wl.Save()
 		}
 	} else {
 		if err = json.Unmarshal(data, &list); err == nil {
@@ -53,6 +66,20 @@ func (wl *whitelist) Load() (w *whitelist, err error) {
 	}
 
 	return wl, err
+}
+
+func (wl *whitelist) Save() (err error) {
+	var data []byte
+
+	if data, err = json.Marshal(wl.List); err == nil {
+		err = ioutil.WriteFile(wl.jsonfile, data, 0644)
+	}
+
+	if err != nil {
+		fmt.Println("Error saving whitelist: " + err.Error())
+	}
+
+	return
 }
 
 func (wl *whitelist) Update() (err error) {
@@ -76,6 +103,15 @@ func (wl *whitelist) Update() (err error) {
 	return
 }
 
+func (wl *whitelist) UpdateLoop(freq time.Duration) {
+	for {
+		if err := wl.Update(); err != nil {
+			fmt.Println(err.Error())
+		}
+		time.Sleep(freq)
+	}
+}
+
 func (wl *whitelist) self(r *http.Request) (station *unifi.Station) {
 	ip := net.ParseIP(r.Header.Get("X-FORWARDED-FOR"))
 	if ip == nil {
@@ -91,95 +127,51 @@ func (wl *whitelist) self(r *http.Request) (station *unifi.Station) {
 	return
 }
 
-func (wl *whitelist) UpdateHandler(w http.ResponseWriter, r *http.Request) {
+type ssm map[string]string
+
+func (wl *whitelist) Router() http.Handler {
+	r := router{make([]route, 0)}
+	r.add("/", "GET", ssm{"Accept": "text/html"}, wl.HTMLListHandler)
+	r.add("/", "GET", ssm{"Accept": "application/json"}, wl.JSONListHandler)
+	r.add("/", "PUT", ssm{"Content-Type": "application/json"}, wl.AddHandler)
+	r.add("/", "DELETE", ssm{}, wl.RemoveHandler)
+
+	return r
+}
+
+func (wl *whitelist) JSONListHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "application/json")
+	if data, err := json.Marshal(wl.view(r)); err == nil {
+		w.Write(data)
+	} else {
+		w.WriteHeader(500)
+	}
+}
+
+func (wl *whitelist) HTMLListHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "text/html")
+	wl.template.Execute(w, wl.view(r))
+}
+
+func (wl *whitelist) AddHandler(w http.ResponseWriter, r *http.Request) {
 	self := wl.self(r)
-	mode := r.URL.Query().Get("mode")
+
 	alias := r.URL.Query().Get("alias")
 	if alias == "" {
 		alias = self.Hostname
 	}
 
-	switch mode {
-	case "add":
-		wl.add(alias, self).save()
-		http.Redirect(w, r, config.base+"/", 303)
-	case "rm":
-		wl.rm(self).save()
-		http.Redirect(w, r, config.base+"/", 303)
-	default:
-		http.NotFound(w, r)
+	wl.List[self.MAC.String()] = &wlitem{
+		Alias:    alias,
+		Hostname: self.Hostname,
+		Info:     self,
 	}
 
-	return
+	http.Redirect(w, r, config.base+"/", 303)
 }
 
-func (wl *whitelist) ListHandler(w http.ResponseWriter, r *http.Request) {
-	if len(r.URL.Path) > 1 {
-		http.NotFound(w, r)
-		return
-	}
-
-	doc := string(MustAsset("index.tmpl"))
-	tpl := template.Must(template.New("index").Parse(doc))
-
-	w.Header().Add("Content-Type", "text/html")
-
-	tpl.Execute(
-		w,
-		struct {
-			Info *unifi.Station
-			List wlitems
-		}{
-			Info: wl.self(r),
-			List: wl.List,
-		},
-	)
-}
-
-func (wl *whitelist) add(alias string, s *unifi.Station) *whitelist {
-	if s != nil && s.MAC != nil {
-		wl.List[s.MAC.String()] = &wlitem{
-			Alias:    alias,
-			Hostname: s.Hostname,
-			Info:     s,
-		}
-	}
-	return wl
-}
-
-func (wl *whitelist) assign(s *unifi.Station) *whitelist {
-	if s != nil && s.MAC != nil {
-		if _, ok := wl.List[s.MAC.String()]; ok {
-			wl.List[s.MAC.String()].Info = s
-		}
-	}
-	return wl
-}
-
-func (wl *whitelist) rm(s *unifi.Station) *whitelist {
-	if s != nil && s.MAC != nil {
-		delete(wl.List, s.MAC.String())
-	}
-	return wl
-}
-
-func (wl *whitelist) has(s *unifi.Station) (ok bool) {
-	if s != nil && s.MAC != nil {
-		_, ok = wl.List[s.MAC.String()]
-	}
-	return ok
-}
-
-func (wl whitelist) save() (err error) {
-	var data []byte
-
-	if data, err = json.Marshal(wl.List); err == nil {
-		err = ioutil.WriteFile(wl.jsonfile, data, 0644)
-	}
-
-	if err != nil {
-		fmt.Println("Error saving whitelist: " + err.Error())
-	}
-
-	return
+func (wl *whitelist) RemoveHandler(w http.ResponseWriter, r *http.Request) {
+	delete(wl.List, wl.self(r).MAC.String())
+	wl.Save()
+	http.Redirect(w, r, config.base+"/", 303)
 }

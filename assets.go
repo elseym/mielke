@@ -83,7 +83,7 @@ func indexTmpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "index.tmpl", size: 3294, mode: os.FileMode(420), modTime: time.Unix(1495829644, 0)}
+	info := bindataFileInfo{name: "index.tmpl", size: 3294, mode: os.FileMode(420), modTime: time.Unix(1495847479, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

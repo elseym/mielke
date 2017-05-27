@@ -37,25 +37,16 @@ func main() {
 	if c, err = initClient(); err == nil {
 		if _, err = initSite(c); err == nil {
 			if w, err = NewWhitelist(c, config.wlist).Load(); err == nil {
-				go update(w)
-				http.HandleFunc("/whitelist", w.UpdateHandler)
-				http.HandleFunc("/", w.ListHandler)
+				go w.UpdateLoop(config.freq)
 				fmt.Println(identifier + " now serving...")
-				http.ListenAndServe(config.bind, nil)
-				return
+				http.ListenAndServe(config.bind, w.Router())
+				os.Exit(0)
 			}
 		}
 	}
 
 	fmt.Println("error: " + err.Error())
 	os.Exit(1)
-}
-
-func update(wl *whitelist) {
-	for {
-		wl.Update()
-		time.Sleep(23 * time.Second)
-	}
 }
 
 // initClient connects and logs into the unifi endpoint
