@@ -12,11 +12,15 @@ import (
 
 	"time"
 
+	"crypto/md5"
+	"io"
+
 	"github.com/mdlayher/unifi"
 )
 
 type wlitem struct {
 	Alias      string         `json:"alias"`
+	AvatarURL  string         `json:"avatarURL"`
 	Hostname   string         `json:"hostname"`
 	Online     bool           `json:"online"`
 	Associated time.Time      `json:"associated"`
@@ -51,10 +55,17 @@ func NewWhitelist(c *unifi.Client, jsonfile string) (wl *whitelist) {
 	}
 }
 
+func gravatarURL(email string) (url string) {
+	h := md5.New()
+	io.WriteString(h, email)
+	return fmt.Sprintf("https://www.gravatar.com/avatar/%x.jpg", h.Sum(nil))
+}
+
 func newWlitem(alias string, s *unifi.Station) (wi *wlitem) {
 	return (&wlitem{
-		Alias:  alias,
-		Online: true,
+		Alias:     alias,
+		AvatarURL: gravatarURL(alias),
+		Online:    true,
 	}).syncFrom(s)
 }
 
