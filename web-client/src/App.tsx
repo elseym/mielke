@@ -57,6 +57,7 @@ class App extends React.Component<any, AppState> {
           online={client.online}
           alias={client.alias}
           hostname={client.hostname}
+          lastSeen={client.lastSeen}
         />
       );
     }

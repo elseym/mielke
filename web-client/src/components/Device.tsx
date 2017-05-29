@@ -9,22 +9,26 @@ interface DeviceProps {
   alias: string;
   hostname: string;
   className?: string;
+  lastSeen: string;
 }
 
-const Device = ({avatarURL, online, alias, hostname, className}: DeviceProps) => (
+const Device = ({avatarURL, online, alias, hostname, className, lastSeen}: DeviceProps) => (
   <div className={className}>
-    <Avatar url={avatarURL} />
-    <Ellipsis bold={online}>{alias}</Ellipsis><br />
-    <Ellipsis bold={false}><small>{hostname}</small></Ellipsis>
+    <Avatar url={avatarURL} hostname={hostname} alias={alias} />
+    <Ellipsis>{lastSeen}</Ellipsis>
   </div>
 );
 
 export default styled(Device)`
   display: flex;
-  flex-direction: row;
-  margin: 0.3rem;
-  padding: .25rem .75rem;
+  flex-direction: column;
+  margin: .5rem;
+  width: 15rem;
+  padding: .5rem;
   border-radius: .25rem;
+  @media (max-width: 36rem) {
+      width: 98%;
+  }
   background: ${ ({online}: DeviceProps) => online ? "#e9ffd9" : "#ffecec" };
   color: ${ ({online}: DeviceProps) => online ? "#4f5459" : "#f5aca6" };
   ${({online}: DeviceProps) => online ? "" : "opacity: .4;"}
