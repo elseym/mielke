@@ -14,6 +14,8 @@ import (
 	"crypto/md5"
 	"io"
 
+	"sort"
+
 	"github.com/mdlayher/unifi"
 )
 
@@ -42,6 +44,10 @@ type view struct {
 	Self wlitem    `json:"self"`
 	List []*wlitem `json:"list"`
 }
+
+func (v view) Len() int           { return len(v.List) }
+func (v view) Swap(i, j int)      { v.List[i], v.List[j] = v.List[j], v.List[i] }
+func (v view) Less(i, j int) bool { return v.List[i].Hostname < v.List[j].Hostname }
 
 func NewWhitelist(c *unifi.Client, jsonfile string) (wl *whitelist) {
 	return &whitelist{
@@ -75,7 +81,7 @@ func (wi *wlitem) syncFrom(s *unifi.Station) *wlitem {
 	return wi
 }
 
-func (wl *whitelist) view(r *http.Request) view {
+func (wl *whitelist) view(r *http.Request) (v view) {
 	self := wl.self(r)
 	alias := self.Hostname
 	if wi, ok := wl.List[self.MAC.String()]; ok {
@@ -87,7 +93,10 @@ func (wl *whitelist) view(r *http.Request) view {
 		list = append(list, i)
 	}
 
-	return view{*newWlitem(alias, self), list}
+	v = view{*newWlitem(alias, self), list}
+	sort.Sort(v)
+
+	return
 }
 
 func (wl *whitelist) Load() (w *whitelist, err error) {
