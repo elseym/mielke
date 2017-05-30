@@ -21,6 +21,8 @@ colleagues currently present in the office.
 
 ## contributing
 
+* run nix-shell to get a shell with all dependencies `nix-shell`
+* [build the web-client frontend](web-client/readme.md)
 * install dependency `go get -u -v github.com/jteeuwen/go-bindata/...`
 * install dependency `go get -u -v github.com/mdlayher/unifi`
 * generate assets with `go-bindata -debug -o assets.go -prefix assets/ assets/`;
