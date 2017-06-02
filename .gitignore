@@ -1,5 +1,5 @@
 .idea/
 vendor/
-secrets.nix
 
+secrets.nix
 whitelist.json
