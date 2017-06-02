@@ -22,10 +22,13 @@ colleagues currently present in the office.
 ## contributing
 
 * run nix-shell to get a shell with all dependencies `nix-shell`
+
+or
+
 * [build the web-client frontend](web-client/readme.md)
 * install dependency `go get -u -v github.com/jteeuwen/go-bindata/...`
 * install dependency `go get -u -v github.com/mdlayher/unifi`
-* generate assets with `go-bindata -debug -o assets.go -prefix assets/ assets/`;
+* generate assets with `go-bindata -debug -o assets.go -prefix web-client/public web-client/public/mielke.html`;
   run without the `-debug` switch before committing assets
 * start mielke with `go run *.go`
 
