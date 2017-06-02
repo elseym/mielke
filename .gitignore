@@ -3,3 +3,4 @@ vendor/
 
 secrets.nix
 whitelist.json
+.env

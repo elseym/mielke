@@ -21,6 +21,10 @@ colleagues currently present in the office.
 
 ## contributing
 
+* use the [.env.dist](env.dist) as template to create a `.env` file that contains the secrets
+  * `MIELKE_API` set to the unifi api. example: http://unifi.local:8443/
+  * `MIELKE_USER` set to the unifi api user
+  * `MIELKE_PASS` set to the unifi api password
 * run nix-shell to get a shell with all dependencies `nix-shell`
 
 or
