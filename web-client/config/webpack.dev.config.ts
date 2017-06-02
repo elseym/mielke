@@ -1,5 +1,5 @@
 import * as merge from "webpack-merge";
-import baseConfig from "./webpack.common.config";
+import baseConfig from "./webpack.config";
 
 export default merge({
   devServer: {
@@ -8,7 +8,7 @@ export default merge({
       warnings: true,
     },
   },
-  devtool: "source-map",
+  devtool: "inline-source-map",
   module: {
     rules: [
       { loader: "source-map-loader", test: /\.js$/, enforce: "pre" },

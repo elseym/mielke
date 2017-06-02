@@ -6,7 +6,8 @@
   "repository": "https://github.com/elseym/mielke.git",
   "scripts": {
     "start": "webpack-dev-server --stdin --config ./config/webpack.dev.config.ts",
-    "build": "webpack -p --config ./config/webpack.prod.config.ts"
+    "build": "webpack -p --config ./config/webpack.config.ts",
+    "build:dev": "webpack --watch --config ./config/webpack.dev.config.ts"
   },
   "license": "WTFPL",
   "dependencies": {
