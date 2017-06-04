@@ -1,11 +1,12 @@
 import * as React from "react";
 import styled from "styled-components";
+import {defaultFont} from "../styles/mixins";
 
 interface ButtonProps {
   color: "green" | "red";
   children: string;
   className?: string;
-  onClick?: (e: any) => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 const Button = ({color, children, className, onClick}: ButtonProps) => (
@@ -24,6 +25,7 @@ export default styled(Button)`
   text-transform: uppercase;
   text-align: center;
   flex: 1;
+  ${defaultFont}
   @media (max-width: 48rem) {
     flex: 0 0 auto;
   }

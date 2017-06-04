@@ -7,16 +7,16 @@ import Device from "./components/Device";
 import InputField from "./components/form/InputField";
 import Button from "./components/form/Button";
 import Section from "./components/Section";
-import Backend from "./api/Backend";
+import Backend, {BackendData, BackendClient} from "./api/Backend";
 
 const backend = new Backend();
 
 interface AppState {
-  data?: any;
-  alias?: any
+  data?: BackendData;
+  alias?: string;
 }
 
-class App extends React.Component<any, AppState> {
+class App extends React.Component<{}, AppState> {
   state: AppState = {};
 
   constructor() {
@@ -36,9 +36,7 @@ class App extends React.Component<any, AppState> {
   }
 
   refresh() {
-    backend.getData().then((response: any) => {
-      return response.json();
-    }).then((data: any) => {
+    backend.getData().then((data: BackendData) => {
       this.setState({
         data,
         alias: data.self.alias,
@@ -51,7 +49,7 @@ class App extends React.Component<any, AppState> {
 
     if (data !== undefined) {
       const list = data.list;
-      return list.map((client: any, index: any) =>
+      return list.map((client: BackendClient, index: number) =>
         <Device
           avatarURL={client.avatarURL}
           online={client.online}
@@ -87,7 +85,7 @@ class App extends React.Component<any, AppState> {
     )
   }
 
-  handleInputChange(e: any) {
+  handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const alias = e.target.value;
 
     this.setState({
@@ -95,16 +93,16 @@ class App extends React.Component<any, AppState> {
     });
   }
 
-  handleInvisible(e: any) {
+  handleInvisible(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
-    backend.setInvisible().then(() => {
+    Backend.setInvisible().then(() => {
       this.refresh();
     });
   }
 
-  handleVisible(e: any) {
+  handleVisible(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
-    backend.setVisible(this.state.alias).then(() => {
+    Backend.setVisible(this.state.alias).then(() => {
       this.refresh();
     });
   }

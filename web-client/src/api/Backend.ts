@@ -1,12 +1,6 @@
-export interface BackendData {
-  self: BackendClient;
-  list: {
-    [key: string]: BackendClient;
-  }
-}
-
 export interface BackendClient {
   alias: string;
+  avatarURL: string;
   hostname: string;
   online: boolean;
   associated: string;
@@ -14,23 +8,30 @@ export interface BackendClient {
   ap: string;
 }
 
+export interface BackendData {
+  self: BackendClient;
+  list: BackendClient[],
+}
+
 export default class Backend {
-  getData() {
+  getData(): Promise<BackendData> | undefined {
     const headers = new Headers();
     headers.set("Accept", "application/json");
 
     return fetch("?", {
       headers,
-    });
+    })
+      .then((resp: Response) => resp.json() as Promise<BackendData>)
+      .then((data: BackendData) => data); // TODO: Verify unsafeData value here
   }
 
-  setInvisible() {
+  static setInvisible() {
     return fetch("?", {
       method: "DELETE",
     });
   }
 
-  setVisible(alias: string) {
+  static setVisible(alias: string) {
     const headers = new Headers();
     headers.set("Content-Type", "application/json");
 
