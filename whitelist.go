@@ -70,27 +70,31 @@ func newWlitem(alias string, s *unifi.Station) (wi *wlitem) {
 }
 
 func (wi *wlitem) syncFrom(s *unifi.Station) *wlitem {
-	wi.AP = s.APMAC.String()
-	wi.Hostname = s.Hostname
-	wi.Associated = s.AssociationTime
-	wi.LastSeen = s.LastSeen
-	wi.Info = s
+	if s != nil {
+		wi.AP = s.APMAC.String()
+		wi.Hostname = s.Hostname
+		wi.Associated = s.AssociationTime
+		wi.LastSeen = s.LastSeen
+		wi.Info = s
+	}
 	return wi
 }
 
 func (wl *whitelist) view(r *http.Request) (v view) {
-	self := wl.self(r)
-	alias := self.Hostname
-	if wi, ok := wl.List[self.MAC.String()]; ok {
-		alias = wi.Alias
-	}
-
-	list := make([]*wlitem, 0, len(wl.List))
+	v.List = make([]*wlitem, 0, len(wl.List))
 	for _, i := range wl.List {
-		list = append(list, i)
+		v.List = append(v.List, i)
 	}
 
-	v = view{*newWlitem(alias, self), list}
+	self, err := wl.self(r)
+	if err == nil {
+		alias := self.Hostname
+		if wi, ok := wl.List[self.MAC.String()]; ok {
+			alias = wi.Alias
+		}
+		v.Self = *newWlitem(alias, self)
+	}
+
 	sort.Sort(v)
 
 	return
@@ -168,17 +172,21 @@ func (wl *whitelist) UpdateLoop(freq time.Duration) {
 	}
 }
 
-func (wl *whitelist) self(r *http.Request) (station *unifi.Station) {
+func (wl *whitelist) self(r *http.Request) (station *unifi.Station, err error) {
 	ip := net.ParseIP(r.Header.Get("X-FORWARDED-FOR"))
 	if ip == nil {
 		ip = net.ParseIP(strings.Split(r.RemoteAddr, ":")[0])
 	}
 
 	for _, s := range wl.stations {
-		if s.IP.String() == ip.String() {
+		if s.IP != nil && s.IP.String() == ip.String() {
 			station = s
 			break
 		}
+	}
+
+	if station == nil {
+		err = fmt.Errorf("unidentifiable client ip '%s'", ip)
 	}
 
 	return
@@ -221,7 +229,12 @@ func (wl *whitelist) AddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	self := wl.self(r)
+	self, err := wl.self(r)
+	if err != nil {
+		w.WriteHeader(403)
+		return
+	}
+
 	if data.Alias == "" {
 		data.Alias = self.Hostname
 	}
@@ -231,6 +244,11 @@ func (wl *whitelist) AddHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wl *whitelist) RemoveHandler(w http.ResponseWriter, r *http.Request) {
-	delete(wl.List, wl.self(r).MAC.String())
+	self, err := wl.self(r)
+	if err != nil {
+		w.WriteHeader(403)
+		return
+	}
+	delete(wl.List, self.MAC.String())
 	wl.Save()
 }
