@@ -1,0 +1,6 @@
+
+# EditorConfig is awesome: http://EditorConfig.org
+root = false
+
+[*.{ts,tsx}]
+max_line_length = 120

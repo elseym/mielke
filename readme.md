@@ -21,9 +21,18 @@ colleagues currently present in the office.
 
 ## contributing
 
+* use the [.env.dist](env.dist) as template to create a `.env` file that contains the secrets
+  * `MIELKE_API` set to the unifi api. example: http://unifi.local:8443/
+  * `MIELKE_USER` set to the unifi api user
+  * `MIELKE_PASS` set to the unifi api password
+* run nix-shell to get a shell with all dependencies `nix-shell`
+
+or
+
+* [build the web-client frontend](web-client/readme.md)
 * install dependency `go get -u -v github.com/jteeuwen/go-bindata/...`
 * install dependency `go get -u -v github.com/mdlayher/unifi`
-* generate assets with `go-bindata -debug -o assets.go -prefix assets/ assets/`;
+* generate assets with `go-bindata -debug -o assets.go -prefix web-client/public web-client/public/mielke.html`;
   run without the `-debug` switch before committing assets
 * start mielke with `go run *.go`
 
