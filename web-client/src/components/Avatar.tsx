@@ -30,7 +30,7 @@ const Avatar = ({url, className, hostname, alias}: AvatarProps) => (
       <div className={className} style={{float: "left"}} />
       <Name>
         <Ellipsis bold={true}>{alias}</Ellipsis>
-        <Ellipsis>{hostname}</Ellipsis>
+        <Ellipsis small={true}>{hostname}</Ellipsis>
       </Name>
     </Wrapper>
 );

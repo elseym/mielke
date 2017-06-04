@@ -15,7 +15,7 @@ interface DeviceProps {
 const Device = ({avatarURL, online, alias, hostname, className, lastSeen}: DeviceProps) => (
   <div className={className}>
     <Avatar url={avatarURL} hostname={hostname} alias={alias} />
-    <Ellipsis>{lastSeen}</Ellipsis>
+    <Ellipsis small={true}>{lastSeen}</Ellipsis>
   </div>
 );
 
