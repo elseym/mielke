@@ -127,30 +127,32 @@ func (wl *whitelist) Save() (err error) {
   return
 }
 
-func (wl *whitelist) OnChange() {
-  fmt.Println("change detected")
+func (wl *whitelist) OnChange(changelist wlitems) {
+  fmt.Println("change detected", changelist)
 }
 
 func (wl *whitelist) Update() (err error) {
   var ss []*unifi.Station
+  var changelist = make(wlitems)
 
   ss, err = wl.client.Stations(config.site)
   if err == nil {
-    changed := false
     wl.stations = make(stations)
     for _, s := range ss {
       wl.stations[s.MAC.String()] = s
     }
     for mac := range wl.List {
       s, ok := wl.stations[mac]
-      changed = changed || wl.List[mac].Online != ok
       if ok {
         wl.List[mac].syncFrom(s)
       }
+      if wl.List[mac].Online != ok {
+        changelist[mac] = wl.List[mac]
+      }
       wl.List[mac].Online = ok
     }
-    if changed {
-      wl.OnChange()
+    if len(changelist) > 0 {
+      wl.OnChange(changelist)
     }
   }
 
