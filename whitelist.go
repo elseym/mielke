@@ -1,19 +1,17 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"html/template"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
-
 	"time"
-
-	"crypto/md5"
-	"io"
 
 	"github.com/mdlayher/unifi"
 )
@@ -37,13 +35,16 @@ type whitelist struct {
 	stations stations
 	client   *unifi.Client
 	jsonfile string
-	template *template.Template
 }
 
 type view struct {
-	Self wlitem
-	List wlitems
+	Self wlitem    `json:"self"`
+	List []*wlitem `json:"list"`
 }
+
+func (v view) Len() int           { return len(v.List) }
+func (v view) Swap(i, j int)      { v.List[i], v.List[j] = v.List[j], v.List[i] }
+func (v view) Less(i, j int) bool { return v.List[i].Hostname < v.List[j].Hostname }
 
 func NewWhitelist(c *unifi.Client, jsonfile string) (wl *whitelist) {
 	return &whitelist{
@@ -51,7 +52,6 @@ func NewWhitelist(c *unifi.Client, jsonfile string) (wl *whitelist) {
 		stations: make(stations),
 		client:   c,
 		jsonfile: jsonfile,
-		template: template.Must(template.New("index").Parse(string(MustAsset("index.tmpl")))),
 	}
 }
 
@@ -70,21 +70,34 @@ func newWlitem(alias string, s *unifi.Station) (wi *wlitem) {
 }
 
 func (wi *wlitem) syncFrom(s *unifi.Station) *wlitem {
-	wi.AP = s.APMAC.String()
-	wi.Hostname = s.Hostname
-	wi.Associated = s.AssociationTime
-	wi.LastSeen = s.LastSeen
-	wi.Info = s
+	if s != nil {
+		wi.AP = s.APMAC.String()
+		wi.Hostname = s.Hostname
+		wi.Associated = s.AssociationTime
+		wi.LastSeen = s.LastSeen
+		wi.Info = s
+	}
 	return wi
 }
 
-func (wl *whitelist) view(r *http.Request) view {
-	self := wl.self(r)
-	alias := self.Hostname
-	if wi, ok := wl.List[self.MAC.String()]; ok {
-		alias = wi.Alias
+func (wl *whitelist) view(r *http.Request) (v view) {
+	v.List = make([]*wlitem, 0, len(wl.List))
+	for _, i := range wl.List {
+		v.List = append(v.List, i)
 	}
-	return view{*newWlitem(alias, self), wl.List}
+
+	self, err := wl.self(r)
+	if err == nil {
+		alias := self.Hostname
+		if wi, ok := wl.List[self.MAC.String()]; ok {
+			alias = wi.Alias
+		}
+		v.Self = *newWlitem(alias, self)
+	}
+
+	sort.Sort(v)
+
+	return
 }
 
 func (wl *whitelist) Load() (w *whitelist, err error) {
@@ -118,30 +131,32 @@ func (wl *whitelist) Save() (err error) {
 	return
 }
 
-func (wl *whitelist) OnChange() {
-	fmt.Println("change detected")
+func (wl *whitelist) OnChange(changelist wlitems) {
+	fmt.Println("change detected", changelist)
 }
 
 func (wl *whitelist) Update() (err error) {
 	var ss []*unifi.Station
+	var changelist = make(wlitems)
 
 	ss, err = wl.client.Stations(config.site)
 	if err == nil {
-		changed := false
 		wl.stations = make(stations)
 		for _, s := range ss {
 			wl.stations[s.MAC.String()] = s
 		}
 		for mac := range wl.List {
 			s, ok := wl.stations[mac]
-			changed = changed || wl.List[mac].Online != ok
 			if ok {
 				wl.List[mac].syncFrom(s)
 			}
+			if wl.List[mac].Online != ok {
+				changelist[mac] = wl.List[mac]
+			}
 			wl.List[mac].Online = ok
 		}
-		if changed {
-			wl.OnChange()
+		if len(changelist) > 0 {
+			wl.OnChange(changelist)
 		}
 	}
 
@@ -157,17 +172,21 @@ func (wl *whitelist) UpdateLoop(freq time.Duration) {
 	}
 }
 
-func (wl *whitelist) self(r *http.Request) (station *unifi.Station) {
+func (wl *whitelist) self(r *http.Request) (station *unifi.Station, err error) {
 	ip := net.ParseIP(r.Header.Get("X-FORWARDED-FOR"))
 	if ip == nil {
 		ip = net.ParseIP(strings.Split(r.RemoteAddr, ":")[0])
 	}
 
 	for _, s := range wl.stations {
-		if s.IP.String() == ip.String() {
+		if s.IP != nil && s.IP.String() == ip.String() {
 			station = s
 			break
 		}
+	}
+
+	if station == nil {
+		err = fmt.Errorf("unidentifiable client ip '%s'", ip)
 	}
 
 	return
@@ -196,7 +215,7 @@ func (wl *whitelist) JSONListHandler(w http.ResponseWriter, r *http.Request) {
 
 func (wl *whitelist) HTMLListHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html")
-	wl.template.Execute(w, wl.view(r))
+	w.Write(MustAsset("mielke.html"))
 }
 
 func (wl *whitelist) AddHandler(w http.ResponseWriter, r *http.Request) {
@@ -210,7 +229,12 @@ func (wl *whitelist) AddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	self := wl.self(r)
+	self, err := wl.self(r)
+	if err != nil {
+		w.WriteHeader(403)
+		return
+	}
+
 	if data.Alias == "" {
 		data.Alias = self.Hostname
 	}
@@ -220,6 +244,11 @@ func (wl *whitelist) AddHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wl *whitelist) RemoveHandler(w http.ResponseWriter, r *http.Request) {
-	delete(wl.List, wl.self(r).MAC.String())
+	self, err := wl.self(r)
+	if err != nil {
+		w.WriteHeader(403)
+		return
+	}
+	delete(wl.List, self.MAC.String())
 	wl.Save()
 }

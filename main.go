@@ -98,7 +98,7 @@ func init() {
 	mkFlag(&config.pass, "pass", "", "UniFi API Password")
 	mkFlag(&config.site, "site", "default", "UniFi Site")
 	mkFlag(&config.bind, "bind", ":5520", "HTTP Host:Port to bind to")
-	mkFlag(&config.base, "base", "", "Reverse Proxy Path Prefix")
+	mkFlag(&config.base, "base", "/", "Reverse Proxy Path Prefix")
 	mkFlag(&config.wlist, "whitelist", "whitelist.json", "List File")
 	mkFlag(&config.freq, "freq", "30s", "Update Frequency")
 
