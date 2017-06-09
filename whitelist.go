@@ -16,6 +16,8 @@ import (
 	"github.com/mdlayher/unifi"
 )
 
+const minFreq = 10 * time.Millisecond
+
 type wlitem struct {
 	Alias      string         `json:"alias"`
 	AvatarURL  string         `json:"avatarURL"`
@@ -164,6 +166,10 @@ func (wl *whitelist) Update() (err error) {
 }
 
 func (wl *whitelist) UpdateLoop(freq time.Duration) {
+	// you probably do not want this anyways
+	if freq < minFreq {
+		freq = minFreq
+	}
 	for {
 		if err := wl.Update(); err != nil {
 			fmt.Println(err.Error())
