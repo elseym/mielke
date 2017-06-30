@@ -18,6 +18,6 @@ export default styled(Ellipsis)`
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
-  ${({bold}: any) => bold ? "font-weight: 900;" : ""}
+  ${({bold}: any) => bold ? "font-weight: bold;" : ""}
   ${({small}: any) => small ? "font-size: small;" : ""}
 `;

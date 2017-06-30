@@ -10,7 +10,7 @@ interface SectionProps {
 const Wrapper = styled.div`
   display: flex;
   padding: .5rem 1rem;
-  @media (max-width: 48rem) {
+  @media (max-width: 64rem) {
     flex-direction: column;
   }
 `;
@@ -34,7 +34,7 @@ export default styled(Section)`
       return `
         display: flex;
         justify-content: space-between;
-        @media (max-width: 48rem) {
+        @media (max-width: 64rem) {
           flex-direction: column;
         }
       `;

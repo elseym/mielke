@@ -23,7 +23,7 @@ export default styled(Device)`
   display: flex;
   flex-direction: column;
   margin: .5rem;
-  width: 15rem;
+  width: 14rem;
   padding: .5rem;
   border-radius: .25rem;
   @media (max-width: 36rem) {
